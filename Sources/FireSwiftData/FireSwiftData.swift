@@ -5,11 +5,63 @@ public final class FireSwiftData {
     private let db = Firestore.firestore()
     private init() {}
     public static let shared = FireSwiftData()
+    
+    private let concurrentQueue = DispatchQueue(label: "com.FireSwiftData.concurrentQueue", attributes: .concurrent)
+}
+
+//Extension for functions with completion
+extension FireSwiftData {
+    public func save<T: FireSwiftDataRepresentable>(item: T, completion: @escaping (Result<Void, Error>) -> ()) {
+        concurrentQueue.async(flags: .barrier) {
+            do {
+                try self.db.collection(T.collectionName).document(item.id).setData(from: item, merge: true) { error in
+                    if let error {
+                        completion(.failure(error))
+                    } else {
+                        completion(.success(()))
+                    }
+                }
+            } catch(let error) {
+                completion(.failure(error))
+            }
+        }
+    }
+
+    public func delete<T: FireSwiftDataRepresentable>(_ type: T.Type, id: String, completion: @escaping (Result<Void, Error>) -> ()) {
+        concurrentQueue.async(flags: .barrier) {
+            self.db.collection(T.collectionName).document(id).delete { error in
+                if let error {
+                    completion(.failure(error))
+                } else {
+                    completion(.success(()))
+                }
+            }
+        }
+    }
+
+    public func read<T: FireSwiftDataRepresentable>(_ type: T.Type, completion: @escaping (Result<[T], Error>) -> ()) {
+        concurrentQueue.async {
+            self.db.collection(T.collectionName).order(by: "createdAt").getDocuments { snapshot, error in
+                if let snapshot {
+                    do {
+                        let data = try snapshot.documents.compactMap {
+                            try $0.data(as: T.self)
+                        }
+                        completion(.success(data))
+                    } catch(let error) {
+                        completion(.failure(error))
+                    }
+                } else if let error {
+                    completion(.failure(error))
+                }
+            }
+        }
+    }
 }
 
 //Extension for functions with Async/Await
 extension FireSwiftData {
-    
+    @FireSwiftDataActor
     public func save<T: FireSwiftDataRepresentable>(item: T) async throws {
         return try await withCheckedThrowingContinuation { continuation in
             do {
@@ -26,58 +78,40 @@ extension FireSwiftData {
         }
     }
     
-    public func fetch<T: FireSwiftDataRepresentable>(_ type: T.Type) async throws -> [T] {
+    @FireSwiftDataActor
+    public func delete<T: FireSwiftDataRepresentable>(_ type: T.Type, id: String) async throws {
+        try await db.collection(T.collectionName).document(id).delete()
+    }
+    
+    @FireSwiftDataActor
+    public func read<T: FireSwiftDataRepresentable>(_ type: T.Type) async throws -> [T] {
         let snapshot = try await db.collection(T.collectionName).order(by: "createdAt").getDocuments()
         return try snapshot.documents.compactMap { document in
             try document.data(as: T.self)
         }
     }
     
-    public func delete<T: FireSwiftDataRepresentable>(_ type: T.Type, id: String) async throws {
-        try await db.collection(T.collectionName).document(id).delete()
-    }
-}
-
-//Extension for functions with completion
-extension FireSwiftData {
-    
-    public func save<T: FireSwiftDataRepresentable>(item: T, completion: @escaping (Result<Void, Error>) -> ()) {
-        do {
-            try db.collection(T.collectionName).document(item.id).setData(from: item, merge: true)
-            completion(.success(()))
-        } catch (let error) {
-            completion(.failure(error))
-        }
-    }
-    
-    public func fetch<T: FireSwiftDataRepresentable>(_ type: T.Type, completion: @escaping (Result<[T], Error>) -> ()) {
-        db.collection(T.collectionName).order(by: "createdAt").getDocuments { snapshot, error in
-            if let snapshot {
-                do {
-                    let data = try snapshot.documents.compactMap({
-                        return try $0.data(as: type)
-                    })
-                    
-                    completion(.success(data))
-                } catch (let error) {
-                    completion(.failure(error))
+    @FireSwiftDataActor
+    public func readBatch<T: FireSwiftDataRepresentable>(_ types: [T.Type]) async -> [Result<[T], Error>] {
+        return await withTaskGroup(of: Result<[T], Error>.self) { group in
+            var results: [Result<[T], Error>] = []
+            for type in types {
+                group.addTask {
+                    do {
+                        let snapshot = try await self.db.collection(type.collectionName).order(by: "createdAt").getDocuments()
+                        let data = try snapshot.documents.compactMap { try $0.data(as: T.self) }
+                        return .success(data)
+                    } catch (let error) {
+                        return .failure(error)
+                    }
                 }
             }
-        }
-    }
-    
-    public func delete<T: FireSwiftDataRepresentable>(_ type: T.Type, id: String, completion: @escaping (Result<Void, Error>) -> ()) {
-        db.collection(String(describing: T.self)).document(id).delete { error in
-            if let error {
-                completion(.failure(error))
-            } else {
-                completion(.success(()))
+            
+            for await result in group {
+                results.append(result)
             }
+            
+            return results
         }
     }
-}
-
-struct User: FireSwiftDataRepresentable {
-    var id: String
-    var name: String
 }
