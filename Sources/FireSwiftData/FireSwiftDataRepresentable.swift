@@ -6,18 +6,19 @@
 //
 
 import Foundation
+import FirebaseFirestore
 
 public protocol FireSwiftDataRepresentable: Codable, Identifiable {
     var id: String { get }
-    var createdAt: Date { get }
+    var createdAt: Timestamp { get }
     
     static var collectionName: String { get }
 }
 
 extension FireSwiftDataRepresentable {
     // Automatically assigns the current date when accessed
-    public var createdAt: Date {
-        return Date()
+    public var createdAt: Timestamp {
+        return Timestamp(date: Date())
     }
 
     // Dynamically sets the collection name based on struct name
