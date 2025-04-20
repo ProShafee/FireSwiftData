@@ -41,7 +41,7 @@ extension FireSwiftData {
 
     public func read<T: FireSwiftDataRepresentable>(_ type: T.Type, completion: @escaping (Result<[T], Error>) -> ()) {
         concurrentQueue.async {
-            self.db.collection(T.collectionName).order(by: "createdAt").getDocuments { snapshot, error in
+            self.db.collection(T.collectionName).getDocuments { snapshot, error in
                 if let snapshot {
                     do {
                         let data = try snapshot.documents.compactMap {
@@ -85,7 +85,7 @@ extension FireSwiftData {
     
     @FireSwiftDataActor
     public func read<T: FireSwiftDataRepresentable>(_ type: T.Type) async throws -> [T] {
-        let snapshot = try await db.collection(T.collectionName).order(by: "createdAt").getDocuments()
+        let snapshot = try await db.collection(T.collectionName).getDocuments()
         return try snapshot.documents.compactMap { document in
             try document.data(as: T.self)
         }
@@ -98,7 +98,7 @@ extension FireSwiftData {
             for type in types {
                 group.addTask {
                     do {
-                        let snapshot = try await self.db.collection(type.collectionName).order(by: "createdAt").getDocuments()
+                        let snapshot = try await self.db.collection(type.collectionName).getDocuments()
                         let data = try snapshot.documents.compactMap { try $0.data(as: T.self) }
                         return .success(data)
                     } catch (let error) {
