@@ -10,35 +10,39 @@ import Foundation
 import PDFKit
 
 final class PDFGenerator {
+    
+    static let shared = PDFGenerator()
 
-    public static let shared = PDFGenerator()
-
-    func createPDF<T: FireSwiftDataRepresentable>(_ allData: [[T]]) -> PDFDocument {
+    func createPDF(_ allData: [Any]) -> PDFDocument {
         let pdfDocument = PDFDocument()
+        var pageIndex = 0
 
-        for (index, dataSet) in allData.enumerated() {
-            guard let first = dataSet.first else { continue }
+        for dataSet in allData {
+            // Ensure it’s a non-empty array of FireSwiftDataRepresentable
+            guard let validArray = dataSet as? [any FireSwiftDataRepresentable],
+                  let first = validArray.first else {
+                continue // skip invalid or empty
+            }
 
             let mirror = Mirror(reflecting: first)
             let headers = mirror.children.compactMap { $0.label }
 
-            let rows = dataSet.map { obj in
+            let rows = validArray.map { obj in
                 Mirror(reflecting: obj).children.map { formatValue($0.value) }
             }
 
-            if let page = createPDFPage(title: T.collectionName, headers: headers, rows: rows) {
-                pdfDocument.insert(page, at: index)
+            if let page = createPDFPage(title: type(of: first).collectionName, headers: headers, rows: rows) {
+                pdfDocument.insert(page, at: pageIndex)
+                pageIndex += 1
             }
         }
 
         return pdfDocument
     }
 
-    /// Formats the value for PDF display
-    func formatValue(_ value: Any) -> String {
+    private func formatValue(_ value: Any) -> String {
         let mirror = Mirror(reflecting: value)
 
-        // Handle Optional values manually
         if mirror.displayStyle == .optional {
             if let child = mirror.children.first {
                 return formatValue(child.value)
@@ -47,7 +51,6 @@ final class PDFGenerator {
             }
         }
 
-        // Handle arrays of Identifiable
         if let identifiableArray = value as? [any Identifiable] {
             return identifiableArray.map { "\($0.id)" }.joined(separator: ", ")
         }
@@ -55,7 +58,7 @@ final class PDFGenerator {
         return "\(value)"
     }
 
-    func createPDFPage(title: String, headers: [String], rows: [[String]]) -> PDFPage? {
+    private func createPDFPage(title: String, headers: [String], rows: [[String]]) -> PDFPage? {
         let pageWidth: CGFloat = 595
         let pageHeight: CGFloat = 842
         let margin: CGFloat = 20
@@ -70,21 +73,16 @@ final class PDFGenerator {
         context.setFillColor(UIColor.white.cgColor)
         context.fill(pageRect)
 
-        // Title
-        let titleAttributes: [NSAttributedString.Key: Any] = [
-            .font: UIFont.boldSystemFont(ofSize: 20)
-        ]
+        let titleAttributes: [NSAttributedString.Key: Any] = [.font: UIFont.boldSystemFont(ofSize: 20)]
+        let textAttributes: [NSAttributedString.Key: Any] = [.font: UIFont.systemFont(ofSize: 12)]
+
         let titlePoint = CGPoint(x: margin, y: margin)
         title.draw(at: titlePoint, withAttributes: titleAttributes)
 
         var yOffset = margin + titleHeight
         let columnWidth = (pageWidth - margin * 2) / CGFloat(headers.count)
-
-        let textFont = UIFont.systemFont(ofSize: 12)
-        let textAttributes: [NSAttributedString.Key: Any] = [.font: textFont]
-
-        // Draw headers
         let headerHeight: CGFloat = 24
+
         for (index, header) in headers.enumerated() {
             let rect = CGRect(x: margin + CGFloat(index) * columnWidth, y: yOffset, width: columnWidth, height: headerHeight)
             context.stroke(rect)
@@ -93,10 +91,8 @@ final class PDFGenerator {
 
         yOffset += headerHeight
 
-        // Draw rows with dynamic height
         for row in rows {
-            // Calculate height for each cell and take the max
-            let rowHeights = row.enumerated().map { (index, text) -> CGFloat in
+            let rowHeights = row.enumerated().map { (_, text) -> CGFloat in
                 let boundingSize = CGSize(width: columnWidth - 8, height: .greatestFiniteMagnitude)
                 let boundingRect = NSString(string: text).boundingRect(
                     with: boundingSize,
@@ -106,14 +102,13 @@ final class PDFGenerator {
                 )
                 return ceil(boundingRect.height + 8)
             }
+
             let maxRowHeight = rowHeights.max() ?? 24
 
-            // Check page overflow
             if yOffset + maxRowHeight > pageHeight - margin {
                 break
             }
 
-            // Draw cells
             for (index, cell) in row.enumerated() {
                 let rect = CGRect(x: margin + CGFloat(index) * columnWidth, y: yOffset, width: columnWidth, height: maxRowHeight)
                 context.stroke(rect)
