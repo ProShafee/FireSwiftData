@@ -1,11 +1,19 @@
+//
+//  PDFGenerator.swift
+//  FireSwiftData
+//
+//  Created by Shafee Rehman on 21/04/2025.
+//
+
+
 import Foundation
 import PDFKit
 
-public final class PDFGenerator {
+final class PDFGenerator {
 
     public static let shared = PDFGenerator()
 
-    public func createPDF<T: FireSwiftDataRepresentable>(_ allData: [[T]]) -> PDFDocument {
+    func createPDF<T: FireSwiftDataRepresentable>(_ allData: [[T]]) -> PDFDocument {
         let pdfDocument = PDFDocument()
 
         for (index, dataSet) in allData.enumerated() {

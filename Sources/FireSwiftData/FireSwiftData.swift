@@ -1,4 +1,5 @@
 import Foundation
+import PDFKit
 import FirebaseFirestore
 
 public final class FireSwiftData {
@@ -11,7 +12,7 @@ public final class FireSwiftData {
 
 //Extension for functions with completion
 extension FireSwiftData {
-    public func save<T: FireSwiftDataRepresentable>(item: T, completion: @escaping (Result<Void, Error>) -> ()) {
+    public func write<T: FireSwiftDataRepresentable>(item: T, completion: @escaping (Result<Void, Error>) -> ()) {
         concurrentQueue.async(flags: .barrier) {
             do {
                 try self.db.collection(T.collectionName).document(item.id).setData(from: item, merge: true) { error in
@@ -62,7 +63,7 @@ extension FireSwiftData {
 //Extension for functions with Async/Await
 extension FireSwiftData {
     @FireSwiftDataActor
-    public func save<T: FireSwiftDataRepresentable>(item: T) async throws {
+    public func write<T: FireSwiftDataRepresentable>(item: T) async throws {
         return try await withCheckedThrowingContinuation { continuation in
             do {
                 try db.collection(T.collectionName).document(item.id).setData(from: item, merge: true) { error in
@@ -113,5 +114,12 @@ extension FireSwiftData {
             
             return results
         }
+    }
+}
+
+//Report Generator
+extension FireSwiftData {
+    public func generatePDFReport<T: FireSwiftDataRepresentable>(_ allData: [[T]]) -> PDFDocument {
+        return PDFGenerator.shared.createPDF(allData)
     }
 }
