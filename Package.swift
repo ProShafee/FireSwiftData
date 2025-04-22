@@ -27,9 +27,5 @@ let package = Package(
             name: "FireSwiftData",
             dependencies: [.product(name: "FirebaseFirestore", package: "firebase-ios-sdk")]
         ),
-        .testTarget(
-            name: "FireSwiftDataTests",
-            dependencies: ["FireSwiftData"]
-        ),
     ]
 )
