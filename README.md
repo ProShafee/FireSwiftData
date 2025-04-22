@@ -53,7 +53,7 @@ pod install
 ### Your Model
 
 ```swift
-struct Task: Codable, Identifiable, FireSwiftDataRepresentable {
+struct Task: FireSwiftDataRepresentable {
     let id: String
     let title: String
     static let collectionName = "tasks"
@@ -76,27 +76,3 @@ FireSwiftData.shared.write(item: task) { result in
 ```swift
 try await FireSwiftData.shared.write(item: task)
 ```
-
-### Read All
-
-```swift
-let tasks = try await FireSwiftData.shared.read(Task.self)
-```
-
-### Delete
-
-```swift
-try await FireSwiftData.shared.delete(Task.self, id: "abc123")
-```
-
----
-
-## 📄 License
-
-MIT License. See [`LICENSE`](./LICENSE) for details.
-
----
-
-## 🙌 Contributions
-
-Feel free to open issues or PRs. All contributions welcome!
