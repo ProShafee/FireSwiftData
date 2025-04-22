@@ -93,21 +93,27 @@ extension FireSwiftData {
     }
     
     @FireSwiftDataActor
-    public func readBatch<T: FireSwiftDataRepresentable>(_ types: [T.Type]) async -> [Result<[T], Error>] {
-        return await withTaskGroup(of: Result<[T], Error>.self) { group in
-            var results: [Result<[T], Error>] = []
+    public func readBatch(_ types: [any FireSwiftDataRepresentable.Type]) async -> [Result<[any FireSwiftDataRepresentable], Error>] {
+        return await withTaskGroup(of: Result<[any FireSwiftDataRepresentable], Error>.self) { group in
+            var results: [Result<[any FireSwiftDataRepresentable], Error>] = []
             for type in types {
                 group.addTask {
                     do {
-                        let snapshot = try await self.db.collection(type.collectionName).getDocuments()
-                        let data = try snapshot.documents.compactMap { try $0.data(as: T.self) }
+                        let snapshot = try await self.db
+                            .collection(type.collectionName)
+                            .getDocuments()
+
+                        let data = try snapshot.documents.compactMap {
+                            try $0.data(as: type)
+                        }
+
                         return .success(data)
-                    } catch (let error) {
+                    } catch {
                         return .failure(error)
                     }
                 }
             }
-            
+
             for await result in group {
                 results.append(result)
             }
@@ -119,26 +125,28 @@ extension FireSwiftData {
 
 //Report Generator
 extension FireSwiftData {
-    func generatePDFReport<T>(_ allData: [[T]]) -> PDFDocument {
+    public func generatePDFReport(_ allData: [[any FireSwiftDataRepresentable]]) -> PDFDocument {
         let pdfDocument = PDFDocument()
 
         for (index, dataSet) in allData.enumerated() {
             // Skip empty arrays
             guard let first = dataSet.first else { continue }
 
-            // Check protocol conformance at runtime
-            guard let representableFirst = first as? any FireSwiftDataRepresentable else {
-                continue
-            }
+            // We already know that the dataSet contains elements conforming to FireSwiftDataRepresentable
+            let representableFirst = first as any FireSwiftDataRepresentable
 
+            // Get headers based on properties of the conforming type
             let mirror = Mirror(reflecting: representableFirst)
             let headers = mirror.children.compactMap { $0.label }
 
+            // Map data to rows based on type
             let rows = dataSet.compactMap { item -> [String]? in
-                guard let conformingItem = item as? any FireSwiftDataRepresentable else { return nil }
+                // Each item in dataSet is already a conforming FireSwiftDataRepresentable
+                let conformingItem = item as any FireSwiftDataRepresentable
                 return Mirror(reflecting: conformingItem).children.map { formatValue($0.value) }
             }
 
+            // Create and insert the PDF page for the data set
             if let page = createPDFPage(title: type(of: representableFirst).collectionName, headers: headers, rows: rows) {
                 pdfDocument.insert(page, at: index)
             }
@@ -146,6 +154,7 @@ extension FireSwiftData {
 
         return pdfDocument
     }
+
 
     private func formatValue(_ value: Any) -> String {
         let mirror = Mirror(reflecting: value)
