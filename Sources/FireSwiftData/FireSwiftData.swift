@@ -163,7 +163,7 @@ extension FireSwiftData {
             if let child = mirror.children.first {
                 return formatValue(child.value)
             } else {
-                return "nil"
+                return ""
             }
         }
 
