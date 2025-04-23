@@ -16,7 +16,7 @@ Pod::Spec.new do |spec|
   #
 
   spec.name         = "FireSwiftData"
-  spec.version      = "1.2.1"
+  spec.version      = "1.2.2"
   spec.summary      = "A simple Firestore wrapper for Swift projects."
 
   # This description is used to generate tags and improve search results.
