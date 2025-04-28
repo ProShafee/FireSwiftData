@@ -1,0 +1,126 @@
+{
+  "ABIRoot": {
+    "kind": "Root",
+    "name": "PDFGenerator",
+    "printedName": "PDFGenerator",
+    "children": [
+      {
+        "kind": "Import",
+        "name": "PDFKit",
+        "printedName": "PDFKit",
+        "declKind": "Import",
+        "moduleName": "PDFGenerator",
+        "declAttributes": [
+          "RawDocComment"
+        ]
+      },
+      {
+        "kind": "TypeDecl",
+        "name": "PDFGenerator",
+        "printedName": "PDFGenerator",
+        "children": [
+          {
+            "kind": "Function",
+            "name": "createPDFPage",
+            "printedName": "createPDFPage(title:headers:rows:)",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Optional",
+                "printedName": "PDFKit.PDFPage?",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "PDFPage",
+                    "printedName": "PDFKit.PDFPage",
+                    "usr": "c:objc(cs)PDFPage"
+                  }
+                ],
+                "usr": "s:Sq"
+              },
+              {
+                "kind": "TypeNominal",
+                "name": "String",
+                "printedName": "Swift.String",
+                "usr": "s:SS"
+              },
+              {
+                "kind": "TypeNominal",
+                "name": "Array",
+                "printedName": "[Swift.String]",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "String",
+                    "printedName": "Swift.String",
+                    "usr": "s:SS"
+                  }
+                ],
+                "usr": "s:Sa"
+              },
+              {
+                "kind": "TypeNominal",
+                "name": "Array",
+                "printedName": "[[Swift.String]]",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Array",
+                    "printedName": "[Swift.String]",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "String",
+                        "printedName": "Swift.String",
+                        "usr": "s:SS"
+                      }
+                    ],
+                    "usr": "s:Sa"
+                  }
+                ],
+                "usr": "s:Sa"
+              }
+            ],
+            "declKind": "Func",
+            "usr": "s:12PDFGeneratorAAC13createPDFPage5title7headers4rowsSo0C0CSgSS_SaySSGSayAJGtFZ",
+            "mangledName": "$s12PDFGeneratorAAC13createPDFPage5title7headers4rowsSo0C0CSgSS_SaySSGSayAJGtFZ",
+            "moduleName": "PDFGenerator",
+            "static": true,
+            "declAttributes": [
+              "Final",
+              "AccessControl"
+            ],
+            "funcSelfKind": "NonMutating"
+          }
+        ],
+        "declKind": "Class",
+        "usr": "s:12PDFGeneratorAAC",
+        "mangledName": "$s12PDFGeneratorAAC",
+        "moduleName": "PDFGenerator",
+        "declAttributes": [
+          "Final",
+          "AccessControl"
+        ],
+        "hasMissingDesignatedInitializers": true,
+        "conformances": [
+          {
+            "kind": "Conformance",
+            "name": "Copyable",
+            "printedName": "Copyable",
+            "usr": "s:s8CopyableP",
+            "mangledName": "$ss8CopyableP"
+          },
+          {
+            "kind": "Conformance",
+            "name": "Escapable",
+            "printedName": "Escapable",
+            "usr": "s:s9EscapableP",
+            "mangledName": "$ss9EscapableP"
+          }
+        ]
+      }
+    ],
+    "json_format_version": 8
+  },
+  "ConstValues": []
+}

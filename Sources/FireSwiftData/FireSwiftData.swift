@@ -1,6 +1,7 @@
 import Foundation
 import PDFKit
 import FirebaseFirestore
+import PDFGenerator
 
 public final class FireSwiftData {
     private let db = Firestore.firestore()
@@ -147,7 +148,7 @@ extension FireSwiftData {
             }
 
             // Create and insert the PDF page for the data set
-            if let page = createPDFPage(title: type(of: representableFirst).collectionName, headers: headers, rows: rows) {
+            if let page = PDFGenerator.createPDFPage(title: type(of: representableFirst).collectionName, headers: headers, rows: rows) {
                 pdfDocument.insert(page, at: index)
             }
         }
@@ -172,69 +173,5 @@ extension FireSwiftData {
         }
 
         return "\(value)"
-    }
-
-    private func createPDFPage(title: String, headers: [String], rows: [[String]]) -> PDFPage? {
-        let pageWidth: CGFloat = 595
-        let pageHeight: CGFloat = 842
-        let margin: CGFloat = 20
-        let titleHeight: CGFloat = 30
-        let pageRect = CGRect(x: 0, y: 0, width: pageWidth, height: pageHeight)
-
-        UIGraphicsBeginImageContextWithOptions(pageRect.size, true, 0)
-        defer { UIGraphicsEndImageContext() }
-
-        guard let context = UIGraphicsGetCurrentContext() else { return nil }
-
-        context.setFillColor(UIColor.white.cgColor)
-        context.fill(pageRect)
-
-        let titleAttributes: [NSAttributedString.Key: Any] = [.font: UIFont.boldSystemFont(ofSize: 20)]
-        let textAttributes: [NSAttributedString.Key: Any] = [.font: UIFont.systemFont(ofSize: 12)]
-
-        let titlePoint = CGPoint(x: margin, y: margin)
-        title.draw(at: titlePoint, withAttributes: titleAttributes)
-
-        var yOffset = margin + titleHeight
-        let columnWidth = (pageWidth - margin * 2) / CGFloat(headers.count)
-        let headerHeight: CGFloat = 24
-
-        for (index, header) in headers.enumerated() {
-            let rect = CGRect(x: margin + CGFloat(index) * columnWidth, y: yOffset, width: columnWidth, height: headerHeight)
-            context.stroke(rect)
-            header.draw(in: rect.insetBy(dx: 4, dy: 4), withAttributes: textAttributes)
-        }
-
-        yOffset += headerHeight
-
-        for row in rows {
-            let rowHeights = row.enumerated().map { (_, text) -> CGFloat in
-                let boundingSize = CGSize(width: columnWidth - 8, height: .greatestFiniteMagnitude)
-                let boundingRect = NSString(string: text).boundingRect(
-                    with: boundingSize,
-                    options: [.usesLineFragmentOrigin, .usesFontLeading],
-                    attributes: textAttributes,
-                    context: nil
-                )
-                return ceil(boundingRect.height + 8)
-            }
-
-            let maxRowHeight = rowHeights.max() ?? 24
-
-            if yOffset + maxRowHeight > pageHeight - margin {
-                break
-            }
-
-            for (index, cell) in row.enumerated() {
-                let rect = CGRect(x: margin + CGFloat(index) * columnWidth, y: yOffset, width: columnWidth, height: maxRowHeight)
-                context.stroke(rect)
-                cell.draw(in: rect.insetBy(dx: 4, dy: 4), withAttributes: textAttributes)
-            }
-
-            yOffset += maxRowHeight
-        }
-
-        guard let image = UIGraphicsGetImageFromCurrentImageContext() else { return nil }
-        return PDFPage(image: image)
     }
 }
