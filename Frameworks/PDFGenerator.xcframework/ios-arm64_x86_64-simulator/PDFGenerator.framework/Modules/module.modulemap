@@ -1,0 +1,6 @@
+framework module PDFGenerator {
+  umbrella header "PDFGenerator.h"
+  export *
+
+  module * { export * }
+}
